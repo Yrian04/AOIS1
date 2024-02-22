@@ -18,13 +18,13 @@ class FloatingPointNumber:
         self[0] = number < 0
         number = abs(number)
 
-        exponent = BinaryNumber(127 + self.mantissa - 1, length=self.exponent).sign_magnitude_representation()
-        mantissa = FixedPointNumber(number, length=self.mantissa * 2, point=self.mantissa - 1)
+        exponent = BinaryNumber(127 + self.mantissa - 1 + 8, length=self.exponent).sign_magnitude_representation()
+        mantissa = FixedPointNumber(number, length=(self.mantissa + 8) * 2, point=self.mantissa - 1 + 8)
         while not mantissa[0]:
             mantissa <<= 1
             exponent.dec()
 
-        for i in range(1,1 + self.exponent):
+        for i in range(1, 1 + self.exponent):
             self[i] = exponent[i - 1]
         for i in range(1 + self.exponent, self.length):
             self[i] = mantissa[i - self.exponent]
@@ -80,17 +80,16 @@ class FloatingPointNumber:
 
         result = FloatingPointNumber()
         exponent = first_exponent
-        mantissa = (first_mantissa + second_mantissa).sign_magnitude_representation()
+        mantissa: FixedPointNumber = (first_mantissa + second_mantissa).sign_magnitude_representation()
         result[0] = mantissa[0]
         count = 1
         mantissa <<= 1
         while not mantissa[0]:
             mantissa <<= 1
             count += 1
-        if count < result.length - result.exponent - 1:
-            exponent.inc()
-        elif count > result.length - result.exponent - 1:
-            exponent.dec()
+        exponent += BinaryNumber(mantissa.point - count, length=result.exponent)
+        if mantissa[mantissa.point + 1]:
+            mantissa += FixedPointNumber(1, length=mantissa.length, point=mantissa.point)
         for i in range(1 + result.exponent, result.length):
             result[i] = mantissa[i - result.exponent]
         for i in range(1, result.exponent + 1):
@@ -105,3 +104,33 @@ class FloatingPointNumber:
 
     def __sub__(self, other):
         return self + -other
+
+    def __eq__(self, other):
+        return self._bits == other._bits
+
+    def __ne__(self, other):
+        return not self == other
+
+    def set_exponent(self, value: BinaryNumber):
+        if value.length != self.exponent:
+            raise Exception()
+
+        for i in range(self.exponent):
+            self[1 + i] = value[i]
+
+    def set_mantissa(self, value: BinaryNumber):
+        if value.length != self.mantissa:
+            raise Exception()
+
+        self[0] = value[0]
+        for i in range(self.mantissa - 1):
+            self[1 + self.exponent + i] = value[1 + i]
+
+    def __float__(self):
+        result = 1
+        for i in range(1 + self.exponent, self.length):
+            if self[i]:
+                result += pow(0.5, i - self.exponent)
+
+        result *= pow(2, int(self.get_exponent() - BinaryNumber(self.shift, length=8)))
+        return float(result)

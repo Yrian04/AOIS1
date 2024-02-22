@@ -61,7 +61,9 @@ class BinaryNumber:
         flag = False
         for i in range(result.length - 1, -1, -1):
             result[i] = flag != (self[i] != other[i])
-            flag = (self[i] and other[i]) or (self[i] and flag) or (other[i] and flag)
+            flag = ((self[i] and other[i]) or
+                    (self[i] and flag) or
+                    (other[i] and flag))
         return result
 
     def __neg__(self):
@@ -86,11 +88,12 @@ class BinaryNumber:
     def __mul__(self, other):
         if not isinstance(other, BinaryNumber):
             raise Exception
+        second = copy(other)
         result = BinaryNumber(length=self.length)
         for i in range(1, result.length + 1):
             if self[-i]:
-                result += other
-            other._lsh()
+                result += second
+            second._lsh()
         return result
 
     def __abs__(self):
@@ -171,24 +174,32 @@ class BinaryNumber:
         return FixedPointNumber(binary=self) / FixedPointNumber(binary=other)
 
     def __int__(self) -> int:
+        number = self.sign_magnitude_representation()
         result = 0
-        for i in range(self.length):
-            if self[-i - 1]:
+        for i in range(number.length - 1):
+            if number[-i - 1]:
                 result += pow(2, i)
+        if number[0]:
+            result *= -1
         return result
+
+
 
 
 class FixedPointNumber(BinaryNumber):
 
-    def __init__(self, value: float = 0., *, binary=None, point=31, length=64):
+    def __init__(self, value: float = 0., *,
+                 binary=None,
+                 point=31,
+                 length=64):
         super().__init__(length=length)
         self.point = point
 
         if isinstance(binary, BinaryNumber):
             self._bits = binary._bits.copy()
             self.length = binary.length
-            self.point = binary.length // 2
-            for i in range(self.point + 1):
+            self.point = point
+            for i in range(self.length - self.point - 1):
                 self._lsh()
             return
 
@@ -285,11 +296,14 @@ class FixedPointNumber(BinaryNumber):
             result._lsh()
             bits_number_of_result -= 1
 
-        return result.to_fixed_point()
+        return result.to_fixed_point(point=self.point)
 
     def __float__(self):
         result = 0
-        for i in range(self.length):
+        number = self.sign_magnitude_representation()
+        for i in range(self.length - 1):
             if self[-i - 1]:
                 result += pow(2, i - self.length_of_frac_path())
+        if number[0]:
+            result *= -1
         return result

@@ -1,6 +1,7 @@
 import pytest
 from src.BinaryNumber import BinaryNumber
 from src.BinaryNumber import FixedPointNumber
+from copy import copy
 
 
 def test_int():
@@ -79,6 +80,38 @@ def test_ones_complement_representation():
 def test_sign_magnitude_representation():
     n = BinaryNumber(-7, length=4)
     assert n.sign_magnitude_representation()._bits == [True, True, True, True]
+
+
+def test_inc():
+    n = BinaryNumber(1)
+    n.inc()
+    assert n == BinaryNumber(2)
+
+
+def test_dec():
+    n = BinaryNumber(1)
+    n.dec()
+    assert n == BinaryNumber(0)
+
+
+def test_to_fixed_point():
+    b = BinaryNumber(pow(2, 32))
+    assert b.to_fixed_point() == FixedPointNumber(1)
+
+
+def test_copy():
+    b = BinaryNumber(1)
+    assert copy(b) == BinaryNumber(1)
+
+
+def test_lshift():
+    b = BinaryNumber(-1)
+    assert b << 1 == BinaryNumber(-1 << 1)
+
+
+def test_rshift():
+    b = BinaryNumber(-1)
+    assert b >> 1 == BinaryNumber(-1 >> 1)
 
 
 if __name__ == "__main__":
