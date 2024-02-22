@@ -205,7 +205,7 @@ class FixedPointNumber(BinaryNumber):
             i += 1
 
         i = 1
-        while fractional_part != 0:
+        while fractional_part != 0 and i != self.length - self.point - 1:
             fractional_part *= 2
             self[self.point + i] = fractional_part >= 1
             fractional_part %= 1

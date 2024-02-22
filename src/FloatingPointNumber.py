@@ -6,6 +6,7 @@ from src.BinaryNumber import FixedPointNumber
 class FloatingPointNumber:
     length = 32
     exponent = 8
+    mantissa = 24
     shift = 127
 
     def __init__(self, number: float = 0.):
@@ -14,28 +15,19 @@ class FloatingPointNumber:
         if number == 0:
             return
 
-        sign = number < 0
+        self[0] = number < 0
         number = abs(number)
 
-        exponent = self.shift
-        while number > 2:
-            number /= 2
-            exponent += 1
-        while number < 1:
-            number *= 2
-            exponent -= 1
+        exponent = BinaryNumber(127 + self.mantissa - 1, length=self.exponent).sign_magnitude_representation()
+        mantissa = FixedPointNumber(number, length=self.mantissa * 2, point=self.mantissa - 1)
+        while not mantissa[0]:
+            mantissa <<= 1
+            exponent.dec()
 
-        for i in range(self.exponent + 1, self.length):
-            self[i] = (number := number * 2) >= 1
-            if self[i]:
-                number %= 1
-
-        self[-1] = False
-        self[0] = sign
-
-        for i in range(self.exponent, 0, -1):
-            self[i] = exponent % 2 == 1
-            exponent //= 2
+        for i in range(1,1 + self.exponent):
+            self[i] = exponent[i - 1]
+        for i in range(1 + self.exponent, self.length):
+            self[i] = mantissa[i - self.exponent]
 
     def __getitem__(self, item: int):
         return self._bits[item]
